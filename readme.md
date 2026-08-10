@@ -7,10 +7,22 @@ browse and install mods from thunderstore and nexus, manage profiles, and launch
 3. install bepinex when asked (no need if already installed)
 4. after that you can use mods, profiles, and play
 
+<img src="./img/settings.jpg" alt="settings" width="800" />
+
 #### thunderstore:
 - open the mods tab and browse thunderstore packs
 - click install on what you want
 - no account or key needed
+
+<img src="./img/thunderstore.jpg" alt="thunderstore" width="800" />
+
+<img src="./img/thunderstore-browse.jpg" alt="thunderstore browse" width="800" />
+
+#### installed:
+- check the installed tab for mods already in your bepinex plugins folders
+- enable / disable / open the mods folder from there
+
+<img src="./img/installed.jpg" alt="installed" width="800" />
 
 #### nexus:
 1. go to settings, site preferences and scroll all the way down
@@ -27,6 +39,8 @@ browse and install mods from thunderstore and nexus, manage profiles, and launch
 #### profiles:
 - use the profiles tab to save sets of mods
 - switch profiles when you want a different set
+
+<img src="./img/profiles.jpg" alt="profiles" width="800" />
 
 #### play:
 - hit play in the top bar to launch silksong through steam with bepinex
