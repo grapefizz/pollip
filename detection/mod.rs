@@ -9,11 +9,13 @@ pub const SILKSONG_APP_ID: u32 = 1_030_300;
 pub const SILKSONG_FOLDER_NAME: &str = "Hollow Knight Silksong";
 pub const NATIVE_LINUX_EXECUTABLE: &str = "Hollow Knight Silksong";
 pub const WINDOWS_EXECUTABLE: &str = "Hollow Knight Silksong.exe";
+pub const MACOS_APPLICATION: &str = "Hollow Knight Silksong.app";
 pub const DETECT_ROOT_ENV: &str = "SILKSONG_DETECT_ROOT";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuildKind {
     NativeLinux,
+    NativeMacOS,
     Proton,
 }
 
@@ -21,6 +23,7 @@ impl fmt::Display for BuildKind {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NativeLinux => write!(formatter, "native linux"),
+            Self::NativeMacOS => write!(formatter, "native macOS"),
             Self::Proton => write!(formatter, "proton"),
         }
     }
@@ -64,7 +67,7 @@ impl fmt::Display for DetectionError {
             }
             Self::ExecutableMissing { install_folder } => write!(
                 formatter,
-                "found install at {} but neither \"{NATIVE_LINUX_EXECUTABLE}\" nor \"{WINDOWS_EXECUTABLE}\" is present",
+                "found install at {} but none of \"{NATIVE_LINUX_EXECUTABLE}\", \"{MACOS_APPLICATION}\", or \"{WINDOWS_EXECUTABLE}\" is present",
                 install_folder.display()
             ),
             Self::PathMissing { path } => {
@@ -130,10 +133,13 @@ pub fn inspect_install_folder(install_folder: &Path) -> Result<SilksongInstall, 
     }
 
     let native_executable = install_folder.join(NATIVE_LINUX_EXECUTABLE);
+    let macos_application = install_folder.join(MACOS_APPLICATION);
     let windows_executable = install_folder.join(WINDOWS_EXECUTABLE);
 
     let (executable, build_kind) = if windows_executable.is_file() {
         (windows_executable, BuildKind::Proton)
+    } else if macos_application.is_dir() {
+        (macos_application, BuildKind::NativeMacOS)
     } else if native_executable.is_file() {
         (native_executable, BuildKind::NativeLinux)
     } else {
@@ -144,7 +150,7 @@ pub fn inspect_install_folder(install_folder: &Path) -> Result<SilksongInstall, 
 
     let proton_prefix = match build_kind {
         BuildKind::Proton => locate_proton_prefix(install_folder),
-        BuildKind::NativeLinux => None,
+        BuildKind::NativeLinux | BuildKind::NativeMacOS => None,
     };
 
     Ok(SilksongInstall {
@@ -225,6 +231,19 @@ mod tests {
         assert_eq!(found.build_kind, BuildKind::NativeLinux);
         assert_eq!(found.executable, install.join(NATIVE_LINUX_EXECUTABLE));
         assert!(found.proton_prefix.is_none());
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn inspects_macos_application_bundle() {
+        let root = scratch_directory("macos");
+        fs::create_dir_all(root.join(MACOS_APPLICATION)).expect("application bundle");
+
+        let found = inspect_install_folder(&root).expect("macos install");
+        assert_eq!(found.executable, root.join(MACOS_APPLICATION));
+        assert_eq!(found.build_kind, BuildKind::NativeMacOS);
+        assert_eq!(found.proton_prefix, None);
 
         fs::remove_dir_all(root).ok();
     }

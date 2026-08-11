@@ -37,11 +37,8 @@ impl From<io::Error> for KeyError {
 }
 
 pub fn key_path() -> Result<PathBuf, KeyError> {
-    let home = std::env::var_os("HOME").ok_or(KeyError::HomeUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("pollip")
+    Ok(crate::platform::data_directory()
+        .map_err(|_| KeyError::HomeUnavailable)?
         .join(KEY_FILE_NAME))
 }
 

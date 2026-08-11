@@ -140,12 +140,15 @@ impl Shell {
             .frame(
                 egui::Frame::new()
                     .fill(BG)
-                    .inner_margin(egui::Margin::symmetric(16, 0)),
+                    .inner_margin(egui::Margin::symmetric(
+                        if cfg!(target_os = "macos") { 100 } else { 16 },
+                        0,
+                    )),
             )
             .show(ui, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.label(brand_text("pollip"));
-                    ui.add_space(28.0);
+                    ui.add_space(44.0);
 
                     if nav_link(ui, self.active_panel == ActivePanel::Mods, "mods").clicked() {
                         self.active_panel = ActivePanel::Mods;

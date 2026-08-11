@@ -44,11 +44,8 @@ pub struct Preferences {
 }
 
 pub fn preferences_path() -> Result<PathBuf, PreferencesError> {
-    let home = std::env::var_os("HOME").ok_or(PreferencesError::HomeUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("pollip")
+    Ok(crate::platform::data_directory()
+        .map_err(|_| PreferencesError::HomeUnavailable)?
         .join("preferences.json"))
 }
 

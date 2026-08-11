@@ -3,7 +3,6 @@ use super::inventory::{
 };
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -90,8 +89,8 @@ pub fn remove_mod(install_folder: &Path, installed: &InstalledMod) -> Result<Pat
 pub fn open_plugins_folder(install_folder: &Path) -> Result<PathBuf, ModError> {
     let folder = plugins_folder(install_folder);
     fs::create_dir_all(&folder)?;
-    match Command::new("xdg-open").arg(&folder).spawn() {
-        Ok(_) => Ok(folder),
+    match crate::platform::open_path(&folder) {
+        Ok(()) => Ok(folder),
         Err(error) => Err(ModError::OpenFailed {
             path: folder,
             detail: error.to_string(),

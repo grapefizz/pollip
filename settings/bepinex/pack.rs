@@ -14,11 +14,13 @@ pub const PRELOADER_ASSEMBLY: &str = "BepInEx/core/BepInEx.Preloader.dll";
 pub const DOORSTOP_CONFIG: &str = "doorstop_config.ini";
 pub const WINHTTP_PROXY: &str = "winhttp.dll";
 pub const LINUX_DOORSTOP: &str = "libdoorstop.so";
+pub const MACOS_DOORSTOP: &str = "libdoorstop.dylib";
 pub const RUN_SCRIPT: &str = "run_bepinex.sh";
 pub const DOORSTOP_VERSION_FILE: &str = ".doorstop_version";
 pub const LOG_OUTPUT: &str = "BepInEx/LogOutput.log";
 pub const PLUGINS_FOLDER: &str = "BepInEx/plugins";
 pub const SMM_LAUNCH_SCRIPT: &str = "smm_launch.sh";
+#[cfg(not(target_os = "macos"))]
 pub const STEAM_LAUNCH_OPTIONS: &str = "./smm_launch.sh %command%";
 
 pub fn pack_download_url() -> String {

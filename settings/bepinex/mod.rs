@@ -8,10 +8,10 @@ pub use install::{
 };
 pub use launch::{
     ensure_launch_options, ensure_launch_script, inspect_injection, launch_silksong,
-    open_launch_script, InjectionState, LaunchOptionsOutcome, LaunchOptionsPlan,
+    open_launch_script, required_launch_options, InjectionState, LaunchOptionsOutcome, LaunchOptionsPlan,
     LaunchScriptAction,
 };
-pub use pack::{RECOMMENDED_PACK_FULL_NAME, SMM_LAUNCH_SCRIPT, STEAM_LAUNCH_OPTIONS};
+pub use pack::{RECOMMENDED_PACK_FULL_NAME, SMM_LAUNCH_SCRIPT};
 pub use status::{inspect_bepinex, BepinexStatus};
 
 use crate::detection::SilksongInstall;
@@ -27,13 +27,13 @@ pub fn prepare_install(
     dry_run: bool,
 ) -> Result<InstallSummary, InstallError> {
     let plan = build_install_plan(&install.install_folder, pack_archive)?;
-    let launch_plan = LaunchOptionsPlan::for_build(install.build_kind);
+    let launch_plan = LaunchOptionsPlan::for_install(install);
     if dry_run {
         return Ok(InstallSummary {
             dry_run: true,
             events: plan.events.clone(),
             launch: LaunchOptionsOutcome::DryRun {
-                launch_options: launch_plan.required_launch_options.to_string(),
+                launch_options: launch_plan.required_launch_options.clone(),
             },
             backup_root: plan.backup_root.clone(),
         });
@@ -58,7 +58,7 @@ pub fn install_recommended(
 }
 
 pub fn configure_injection(install: &SilksongInstall) -> Result<LaunchOptionsOutcome, InstallError> {
-    let launch_plan = LaunchOptionsPlan::for_build(install.build_kind);
+    let launch_plan = LaunchOptionsPlan::for_install(install);
     Ok(ensure_launch_options(install, &launch_plan)?)
 }
 
@@ -70,8 +70,9 @@ pub fn reset_launch_script(install: &SilksongInstall) -> Result<String, InstallE
         | launch::LaunchScriptAction::Reset { path } => path,
     };
     Ok(format!(
-        "reset editable launch script at {}\nsteam should use: {STEAM_LAUNCH_OPTIONS}",
-        path.display()
+        "reset editable launch script at {}\nsteam should use: {}",
+        path.display(),
+        required_launch_options(install)
     ))
 }
 
@@ -83,6 +84,6 @@ pub fn status_label(status: &BepinexStatus) -> &'static str {
     }
 }
 
-pub fn build_kind_launch_hint() -> &'static str {
-    STEAM_LAUNCH_OPTIONS
+pub fn build_kind_launch_hint(install: &SilksongInstall) -> String {
+    required_launch_options(install)
 }

@@ -222,10 +222,8 @@ pub fn cache_directory() -> Result<PathBuf, CatalogError> {
     if let Some(explicit) = std::env::var_os(CACHE_ENV) {
         return Ok(PathBuf::from(explicit));
     }
-    let home = std::env::var_os("HOME").ok_or(CatalogError::CacheDirectoryUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".cache")
-        .join("pollip")
+    Ok(crate::platform::cache_directory()
+        .map_err(|_| CatalogError::CacheDirectoryUnavailable)?
         .join("nexus"))
 }
 

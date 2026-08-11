@@ -15,7 +15,7 @@ use crate::ui::ToastQueue;
 use bepinex::{
     build_kind_launch_hint, configure_injection, inspect_injection, open_launch_script,
     status_label, InjectionState, LaunchOptionsOutcome, LaunchScriptAction,
-    RECOMMENDED_PACK_FULL_NAME, SMM_LAUNCH_SCRIPT, STEAM_LAUNCH_OPTIONS,
+    RECOMMENDED_PACK_FULL_NAME, SMM_LAUNCH_SCRIPT,
 };
 use eframe::egui;
 
@@ -288,7 +288,10 @@ impl SettingsPanel {
             ui.add_space(6.0);
             ui.label(format!(
                 "steam is pointed at editable {SMM_LAUNCH_SCRIPT} via: {}",
-                build_kind_launch_hint()
+                self.install
+                    .as_ref()
+                    .map(build_kind_launch_hint)
+                    .unwrap_or_default()
             ));
 
             ui.add_space(8.0);
@@ -581,7 +584,8 @@ impl SettingsPanel {
         match open_launch_script(&install) {
             Ok(()) => {
                 let message = format!(
-                    "opened editable launch script ({SMM_LAUNCH_SCRIPT}). steam uses: {STEAM_LAUNCH_OPTIONS}"
+                    "opened editable launch script ({SMM_LAUNCH_SCRIPT}). steam uses: {}",
+                    build_kind_launch_hint(&install)
                 );
                 self.bepinex_log = Some(message.clone());
                 logging::info(&message);
