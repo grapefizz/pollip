@@ -152,7 +152,7 @@ pub fn register_nxm_handler() -> Result<PathBuf, NxmError> {
     let contents = format!(
         "[Desktop Entry]\n\
 Type=Application\n\
-Name=Silksong Mod Manager (Nexus Downloads)\n\
+Name=pollip (Nexus Downloads)\n\
 Exec=\"{exe_display}\" %u\n\
 MimeType={NXM_MIME};\n\
 NoDisplay=true\n\
@@ -241,7 +241,7 @@ fn data_directory() -> Result<PathBuf, NxmError> {
     Ok(PathBuf::from(home)
         .join(".local")
         .join("share")
-        .join("silksong-mod-manager"))
+        .join("pollip"))
 }
 
 fn pending_file_path() -> Result<PathBuf, NxmError> {

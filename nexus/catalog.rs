@@ -225,7 +225,7 @@ pub fn cache_directory() -> Result<PathBuf, CatalogError> {
     let home = std::env::var_os("HOME").ok_or(CatalogError::CacheDirectoryUnavailable)?;
     Ok(PathBuf::from(home)
         .join(".cache")
-        .join("silksong-mod-manager")
+        .join("pollip")
         .join("nexus"))
 }
 

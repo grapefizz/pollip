@@ -62,7 +62,7 @@ pub fn profiles_directory() -> Result<PathBuf, StoreError> {
     Ok(PathBuf::from(home)
         .join(".local")
         .join("share")
-        .join("silksong-mod-manager")
+        .join("pollip")
         .join("profiles"))
 }
 

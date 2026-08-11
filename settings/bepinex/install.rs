@@ -313,7 +313,7 @@ fn cache_directory() -> Result<PathBuf, PackError> {
     let home = std::env::var_os("HOME").ok_or(PackError::CacheDirectoryUnavailable)?;
     Ok(PathBuf::from(home)
         .join(".cache")
-        .join("silksong-mod-manager")
+        .join("pollip")
         .join("bepinex"))
 }
 
