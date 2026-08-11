@@ -15,7 +15,6 @@ use crate::ui::{
 use crate::ui::ToastQueue;
 use eframe::egui;
 use std::collections::HashSet;
-use std::process::Command;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::thread;
 
@@ -322,7 +321,7 @@ impl NexusBrowse {
             });
 
         if let Some(url) = open_target {
-            let _ = Command::new("xdg-open").arg(url).spawn();
+            let _ = crate::platform::open_url(&url);
         }
 
         if let Some(remote) = install_target {

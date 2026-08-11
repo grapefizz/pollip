@@ -310,10 +310,8 @@ fn cache_directory() -> Result<PathBuf, PackError> {
     if let Some(explicit) = std::env::var_os("SILKSONG_BEPINEX_CACHE") {
         return Ok(PathBuf::from(explicit));
     }
-    let home = std::env::var_os("HOME").ok_or(PackError::CacheDirectoryUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".cache")
-        .join("pollip")
+    Ok(crate::platform::cache_directory()
+        .map_err(|_| PackError::CacheDirectoryUnavailable)?
         .join("bepinex"))
 }
 

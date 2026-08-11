@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "macos"))]
 use super::domain::{NXM_DESKTOP_FILE, NXM_MIME};
 use std::fs;
 use std::io::{self, Write};
@@ -145,6 +146,11 @@ pub fn register_nxm_handler() -> Result<PathBuf, NxmError> {
     let exe = std::env::current_exe().map_err(|error| {
         NxmError::Handler(format!("could not resolve current executable: {error}"))
     })?;
+    #[cfg(target_os = "macos")]
+    return register_macos_nxm_handler(&exe);
+
+    #[cfg(not(target_os = "macos"))]
+    {
     let exe_display = exe.display().to_string();
     let applications = applications_directory()?;
     fs::create_dir_all(&applications)?;
@@ -180,9 +186,17 @@ Categories=Game;\n"
         .status();
 
     Ok(desktop_path)
+    }
 }
 
 pub fn handler_is_registered() -> bool {
+    #[cfg(target_os = "macos")]
+    return macos_nxm_bundle_path()
+        .map(|path| path.join("Contents/Info.plist").is_file())
+        .unwrap_or(false);
+
+    #[cfg(not(target_os = "macos"))]
+    {
     let Ok(applications) = applications_directory() else {
         return false;
     };
@@ -201,8 +215,72 @@ pub fn handler_is_registered() -> bool {
             && trimmed.contains('=')
             && trimmed.contains(NXM_DESKTOP_FILE)
     })
+    }
 }
 
+#[cfg(target_os = "macos")]
+fn register_macos_nxm_handler(exe: &Path) -> Result<PathBuf, NxmError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let bundle = macos_nxm_bundle_path()?;
+    let contents = bundle.join("Contents");
+    let macos = contents.join("MacOS");
+    fs::create_dir_all(&macos)?;
+
+    let info = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleExecutable</key><string>pollip-nxm-handler</string>
+<key>CFBundleIdentifier</key><string>io.pollip.nxm-handler</string>
+<key>CFBundleName</key><string>pollip Nexus Downloads</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleURLTypes</key><array><dict>
+<key>CFBundleURLName</key><string>Nexus Mod Manager Link</string>
+<key>CFBundleURLSchemes</key><array><string>nxm</string></array>
+</dict></array>
+</dict></plist>
+"#;
+    let info_path = contents.join("Info.plist");
+    fs::write(&info_path, info)?;
+
+    let launcher = macos.join("pollip-nxm-handler");
+    fs::write(
+        &launcher,
+        format!("#!/bin/sh\nexec {} \"$@\"\n", shell_quote(exe)),
+    )?;
+    let mut permissions = fs::metadata(&launcher)?.permissions();
+    permissions.set_mode(permissions.mode() | 0o111);
+    fs::set_permissions(&launcher, permissions)?;
+
+    let registration = Command::new("/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
+        .args(["-f", &bundle.display().to_string()])
+        .status()
+        .map_err(|error| NxmError::Handler(format!("could not register macOS URL handler: {error}")))?;
+    if !registration.success() {
+        return Err(NxmError::Handler(format!(
+            "macOS rejected the URL handler bundle at {}",
+            bundle.display()
+        )));
+    }
+    Ok(bundle)
+}
+
+#[cfg(target_os = "macos")]
+fn macos_nxm_bundle_path() -> Result<PathBuf, NxmError> {
+    let home = std::env::var_os("HOME").ok_or(NxmError::HomeUnavailable)?;
+    Ok(PathBuf::from(home)
+        .join("Applications")
+        .join("pollip NXM.app"))
+}
+
+#[cfg(target_os = "macos")]
+fn shell_quote(path: &Path) -> String {
+    let text = path.to_string_lossy();
+    format!("'{}'", text.replace('\'', "'\\\"'\\\"'"))
+}
+
+#[cfg(not(target_os = "macos"))]
 fn upsert_mime_default(path: &Path, mime: &str, desktop: &str) -> Result<(), NxmError> {
     let existing = if path.is_file() {
         fs::read_to_string(path)?
@@ -237,17 +315,14 @@ fn upsert_mime_default(path: &Path, mime: &str, desktop: &str) -> Result<(), Nxm
 }
 
 fn data_directory() -> Result<PathBuf, NxmError> {
-    let home = std::env::var_os("HOME").ok_or(NxmError::HomeUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("pollip"))
+    crate::platform::data_directory().map_err(|_| NxmError::HomeUnavailable)
 }
 
 fn pending_file_path() -> Result<PathBuf, NxmError> {
     Ok(data_directory()?.join("nxm-pending.txt"))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn applications_directory() -> Result<PathBuf, NxmError> {
     let home = std::env::var_os("HOME").ok_or(NxmError::HomeUnavailable)?;
     Ok(PathBuf::from(home)
@@ -256,6 +331,7 @@ fn applications_directory() -> Result<PathBuf, NxmError> {
         .join("applications"))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn mimeapps_path() -> Result<PathBuf, NxmError> {
     let home = std::env::var_os("HOME").ok_or(NxmError::HomeUnavailable)?;
     Ok(PathBuf::from(home)

@@ -11,6 +11,8 @@ mod mods;
 mod nexus;
 #[path = "../profiles/mod.rs"]
 mod profiles;
+#[path = "../platform/mod.rs"]
+mod platform;
 #[path = "../settings/mod.rs"]
 mod settings;
 #[path = "../thunderstore/mod.rs"]
@@ -21,7 +23,7 @@ mod ui;
 use eframe::egui;
 use nexus::enqueue_nxm_url;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use ui::{apply_dark_theme, Shell};
 
 struct Pollip {
@@ -59,10 +61,19 @@ fn main() -> eframe::Result {
 
     write_instance_pid();
 
+    let viewport = egui::ViewportBuilder::default()
+        .with_title("pollip")
+        .with_inner_size([1080.0, 720.0])
+        .with_decorations(true);
+    #[cfg(target_os = "macos")]
+    let viewport = viewport
+        .with_fullsize_content_view(true)
+        .with_title_shown(false)
+        .with_titlebar_shown(false)
+        .with_titlebar_buttons_shown(true);
+
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title("pollip")
-            .with_inner_size([1080.0, 720.0]),
+        viewport,
         ..Default::default()
     };
 
@@ -81,13 +92,7 @@ fn main() -> eframe::Result {
 }
 
 fn data_directory() -> Option<PathBuf> {
-    let home = std::env::var_os("HOME")?;
-    Some(
-        PathBuf::from(home)
-            .join(".local")
-            .join("share")
-            .join("pollip"),
-    )
+    platform::data_directory().ok()
 }
 
 fn instance_pid_path() -> Option<PathBuf> {
@@ -107,7 +112,7 @@ fn peer_instance_running() -> bool {
     if pid == std::process::id() {
         return false;
     }
-    Path::new(&format!("/proc/{pid}")).exists()
+    platform::process_is_running(pid)
 }
 
 fn write_instance_pid() {
