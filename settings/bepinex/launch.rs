@@ -30,6 +30,7 @@ pub fn required_launch_options(install: &SilksongInstall) -> String {
     }
     #[cfg(not(target_os = "macos"))]
     {
+        let _ = install;
         STEAM_LAUNCH_OPTIONS.to_string()
     }
 }

@@ -65,6 +65,8 @@ fn main() -> eframe::Result {
         .with_title("pollip")
         .with_inner_size([1080.0, 720.0])
         .with_decorations(true);
+    #[cfg(target_os = "linux")]
+    let viewport = viewport.with_decorations(false);
     #[cfg(target_os = "macos")]
     let viewport = viewport
         .with_fullsize_content_view(true)
