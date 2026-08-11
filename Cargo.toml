@@ -1,10 +1,10 @@
 [package]
-name = "silksong-mod-manager"
+name = "pollip"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "silksong-mod-manager"
+name = "pollip"
 path = "launch/main.rs"
 
 [dependencies]

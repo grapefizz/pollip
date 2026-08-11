@@ -50,7 +50,7 @@ pub fn data_directory() -> Result<PathBuf, LogError> {
     Ok(PathBuf::from(home)
         .join(".local")
         .join("share")
-        .join("silksong-mod-manager"))
+        .join("pollip"))
 }
 
 pub fn logs_directory() -> Result<PathBuf, LogError> {
@@ -68,7 +68,7 @@ pub fn init_logging() -> Result<PathBuf, LogError> {
     let path = directory.join(format!("session-{stamp}.log"));
     {
         let mut file = File::create(&path)?;
-        writeln!(file, "silksong mod manager session started")?;
+        writeln!(file, "pollip session started")?;
     }
     if let Ok(mut guard) = LOG_FILE.lock() {
         *guard = Some(path.clone());

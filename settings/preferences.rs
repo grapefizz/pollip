@@ -48,7 +48,7 @@ pub fn preferences_path() -> Result<PathBuf, PreferencesError> {
     Ok(PathBuf::from(home)
         .join(".local")
         .join("share")
-        .join("silksong-mod-manager")
+        .join("pollip")
         .join("preferences.json"))
 }
 

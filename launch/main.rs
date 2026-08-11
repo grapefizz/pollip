@@ -24,11 +24,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use ui::{apply_dark_theme, Shell};
 
-struct SilksongModManager {
+struct Pollip {
     shell: Shell,
 }
 
-impl Default for SilksongModManager {
+impl Default for Pollip {
     fn default() -> Self {
         Self {
             shell: Shell::default(),
@@ -36,7 +36,7 @@ impl Default for SilksongModManager {
     }
 }
 
-impl eframe::App for SilksongModManager {
+impl eframe::App for Pollip {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.shell.draw(ui);
     }
@@ -61,13 +61,13 @@ fn main() -> eframe::Result {
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("silksong mod manager")
+            .with_title("pollip")
             .with_inner_size([1080.0, 720.0]),
         ..Default::default()
     };
 
     eframe::run_native(
-        "silksong mod manager",
+        "pollip",
         native_options,
         Box::new(|cc| {
             apply_dark_theme(&cc.egui_ctx);
@@ -75,7 +75,7 @@ fn main() -> eframe::Result {
                 Ok(path) => logging::info(format!("logging to {}", path.display())),
                 Err(error) => eprintln!("could not start logging: {error}"),
             }
-            Ok(Box::new(SilksongModManager::default()))
+            Ok(Box::new(Pollip::default()))
         }),
     )
 }
@@ -86,7 +86,7 @@ fn data_directory() -> Option<PathBuf> {
         PathBuf::from(home)
             .join(".local")
             .join("share")
-            .join("silksong-mod-manager"),
+            .join("pollip"),
     )
 }
 

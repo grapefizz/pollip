@@ -144,9 +144,7 @@ impl Shell {
             )
             .show(ui, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label(brand_text("silksong"));
-                    ui.add_space(4.0);
-                    ui.label(muted_text("mod manager"));
+                    ui.label(brand_text("pollip"));
                     ui.add_space(28.0);
 
                     if nav_link(ui, self.active_panel == ActivePanel::Mods, "mods").clicked() {
@@ -241,8 +239,7 @@ impl Shell {
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     ui.add_space(48.0);
-                    ui.label(brand_text("silksong"));
-                    ui.label(muted_text("mod manager"));
+                    ui.label(brand_text("pollip"));
                     ui.add_space(8.0);
                     let rect = ui.max_rect();
                     ui.painter().hline(

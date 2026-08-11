@@ -41,7 +41,7 @@ pub fn key_path() -> Result<PathBuf, KeyError> {
     Ok(PathBuf::from(home)
         .join(".local")
         .join("share")
-        .join("silksong-mod-manager")
+        .join("pollip")
         .join(KEY_FILE_NAME))
 }
 

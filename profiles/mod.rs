@@ -149,7 +149,7 @@ impl ProfilesPanel {
             "stored under {}",
             profiles_directory()
                 .map(|path| path.display().to_string())
-                .unwrap_or_else(|_| "~/.local/share/silksong-mod-manager/profiles".into())
+                .unwrap_or_else(|_| "~/.local/share/pollip/profiles".into())
         )));
         ui.add_space(8.0);
 
