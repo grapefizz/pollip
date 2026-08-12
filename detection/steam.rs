@@ -1,4 +1,5 @@
 use crate::detection::DetectionError;
+use crate::platform;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -18,32 +19,7 @@ pub fn default_steam_common_folders() -> Result<Vec<PathBuf>, DetectionError> {
 }
 
 pub fn candidate_steam_roots(home: &Path) -> Vec<PathBuf> {
-    vec![
-        home.join(".steam").join("steam"),
-        home.join(".local").join("share").join("Steam"),
-        home.join(".var")
-            .join("app")
-            .join("com.valvesoftware.Steam")
-            .join(".local")
-            .join("share")
-            .join("Steam"),
-        home.join(".var")
-            .join("app")
-            .join("com.valvesoftware.Steam")
-            .join(".steam")
-            .join("steam"),
-        home.join("snap")
-            .join("steam")
-            .join("common")
-            .join(".local")
-            .join("share")
-            .join("Steam"),
-        home.join("snap")
-            .join("steam")
-            .join("common")
-            .join(".steam")
-            .join("steam"),
-    ]
+    platform::steam_root_candidates(home)
 }
 
 pub fn common_folders_from_steam_roots(
@@ -168,6 +144,7 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[test]
     fn candidate_roots_include_flatpak_and_snap() {
         let home = PathBuf::from("/home/player");
@@ -191,5 +168,13 @@ mod tests {
                 .join("share")
                 .join("Steam")
         ));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn candidate_roots_include_macos_steam() {
+        let home = PathBuf::from("/Users/player");
+        let roots = candidate_steam_roots(&home);
+        assert!(roots.contains(&home.join("Library/Application Support/Steam")));
     }
 }

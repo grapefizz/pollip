@@ -1,5 +1,5 @@
 use super::pack::{
-    CORE_ASSEMBLY, DOORSTOP_CONFIG, DOORSTOP_VERSION_FILE, LINUX_DOORSTOP,
+    CORE_ASSEMBLY, DOORSTOP_CONFIG, DOORSTOP_VERSION_FILE, LINUX_DOORSTOP, MACOS_DOORSTOP,
     MANAGER_PACK_VERSION_FILE, PRELOADER_ASSEMBLY, RECOMMENDED_BEPINEX_VERSION,
     RECOMMENDED_PACK_VERSION, RUN_SCRIPT, WINHTTP_PROXY, BEPINEX_FOLDER,
 };
@@ -28,6 +28,7 @@ pub struct BepinexPresence {
     pub doorstop_config: bool,
     pub winhttp_proxy: bool,
     pub linux_doorstop: bool,
+    pub macos_doorstop: bool,
     pub run_script: bool,
     pub doorstop_version_file: bool,
     pub pack_version: Option<String>,
@@ -41,7 +42,7 @@ impl BepinexPresence {
             && self.preloader_assembly
             && self.doorstop_config
             && self.winhttp_proxy
-            && self.linux_doorstop
+            && native_doorstop_present(self)
             && self.run_script
     }
 
@@ -87,6 +88,7 @@ pub fn presence_in(install_folder: &Path) -> BepinexPresence {
     let doorstop_config = install_folder.join(DOORSTOP_CONFIG).is_file();
     let winhttp_proxy = install_folder.join(WINHTTP_PROXY).is_file();
     let linux_doorstop = install_folder.join(LINUX_DOORSTOP).is_file();
+    let macos_doorstop = install_folder.join(MACOS_DOORSTOP).is_file();
     let run_script = install_folder.join(RUN_SCRIPT).is_file();
     let doorstop_version_file = install_folder.join(DOORSTOP_VERSION_FILE).is_file();
     let pack_version = read_pack_version(install_folder);
@@ -99,10 +101,22 @@ pub fn presence_in(install_folder: &Path) -> BepinexPresence {
         doorstop_config,
         winhttp_proxy,
         linux_doorstop,
+        macos_doorstop,
         run_script,
         doorstop_version_file,
         pack_version,
         bepinex_version,
+    }
+}
+
+fn native_doorstop_present(presence: &BepinexPresence) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        presence.macos_doorstop
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        presence.linux_doorstop
     }
 }
 
@@ -185,6 +199,7 @@ mod tests {
         write_file(&root.join(DOORSTOP_CONFIG), b"enabled = true");
         write_file(&root.join(WINHTTP_PROXY), b"dll");
         write_file(&root.join(LINUX_DOORSTOP), b"so");
+        write_file(&root.join(MACOS_DOORSTOP), b"dylib");
         write_file(&root.join(RUN_SCRIPT), b"#!/bin/sh");
         write_file(&root.join(DOORSTOP_VERSION_FILE), b"4.4.1");
         write_file(

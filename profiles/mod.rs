@@ -149,7 +149,7 @@ impl ProfilesPanel {
             "stored under {}",
             profiles_directory()
                 .map(|path| path.display().to_string())
-                .unwrap_or_else(|_| "~/.local/share/pollip/profiles".into())
+                .unwrap_or_else(|_| "pollip data directory unavailable".into())
         )));
         ui.add_space(8.0);
 

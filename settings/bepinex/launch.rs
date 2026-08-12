@@ -1,24 +1,37 @@
 use super::pack::{
-    LOG_OUTPUT, PLUGINS_FOLDER, RUN_SCRIPT, SMM_LAUNCH_SCRIPT, STEAM_LAUNCH_OPTIONS,
+    LOG_OUTPUT, PLUGINS_FOLDER, RUN_SCRIPT, SMM_LAUNCH_SCRIPT,
 };
+#[cfg(not(target_os = "macos"))]
+use super::pack::STEAM_LAUNCH_OPTIONS;
 use crate::detection::{candidate_steam_roots, BuildKind, SilksongInstall, SILKSONG_APP_ID};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub const PROTON_WINEDLL_OVERRIDE: &str = r#"winhttp=n,b"#;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LaunchOptionsPlan {
-    pub required_launch_options: &'static str,
+    pub required_launch_options: String,
 }
 
 impl LaunchOptionsPlan {
-    pub fn for_build(_build_kind: BuildKind) -> Self {
+    pub fn for_install(install: &SilksongInstall) -> Self {
         Self {
-            required_launch_options: STEAM_LAUNCH_OPTIONS,
+            required_launch_options: required_launch_options(install),
         }
+    }
+}
+
+pub fn required_launch_options(install: &SilksongInstall) -> String {
+    #[cfg(target_os = "macos")]
+    {
+        format!("\"{}\" %command%", launch_script_path(&install.install_folder).display())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = install;
+        STEAM_LAUNCH_OPTIONS.to_string()
     }
 }
 
@@ -131,6 +144,9 @@ pub fn launch_script_body(build_kind: BuildKind) -> String {
         BuildKind::NativeLinux => format!(
             "#!/bin/sh\nset -eu\ncd \"$(dirname \"$0\")\"\nexec ./{RUN_SCRIPT} \"$@\"\n"
         ),
+        BuildKind::NativeMacOS => format!(
+            "#!/bin/sh\nset -eu\ncd \"$(dirname \"$0\")\"\nexec ./{RUN_SCRIPT} \"$@\"\n"
+        ),
         BuildKind::Proton => format!(
             "#!/bin/sh\nset -eu\ncd \"$(dirname \"$0\")\"\nexport WINEDLLOVERRIDES=\"{PROTON_WINEDLL_OVERRIDE}\"\nexec \"$@\"\n"
         ),
@@ -166,7 +182,7 @@ pub fn open_launch_script(install: &SilksongInstall) -> Result<(), std::io::Erro
     if !path.is_file() {
         ensure_launch_script(install, false)?;
     }
-    Command::new("xdg-open").arg(&path).spawn()?;
+    crate::platform::open_path(&path)?;
     Ok(())
 }
 
@@ -250,12 +266,8 @@ pub fn launch_silksong(install: &SilksongInstall) -> Result<LaunchGameReport, La
 fn ask_steam_to_run_silksong() -> Result<String, LaunchGameError> {
     let uri = format!("steam://rungameid/{SILKSONG_APP_ID}");
 
-    if Command::new("steam").arg(&uri).spawn().is_ok() {
-        return Ok(format!("steam {uri}"));
-    }
-
-    match Command::new("xdg-open").arg(&uri).spawn() {
-        Ok(_) => Ok(format!("xdg-open {uri}")),
+    match crate::platform::launch_steam_uri(&uri) {
+        Ok(method) => Ok(method),
         Err(error) => Err(LaunchGameError::SteamUnavailable {
             detail: error.to_string(),
         }),
@@ -263,7 +275,7 @@ fn ask_steam_to_run_silksong() -> Result<String, LaunchGameError> {
 }
 
 pub fn inspect_injection(install: &SilksongInstall) -> InjectionState {
-    let required = STEAM_LAUNCH_OPTIONS.to_string();
+    let required = required_launch_options(install);
     let current = read_launch_options(SILKSONG_APP_ID).ok().flatten();
     let script = launch_script_path(&install.install_folder);
     let script_present = script.is_file();
@@ -297,12 +309,15 @@ pub fn inspect_injection(install: &SilksongInstall) -> InjectionState {
                 launch_script: None,
             }
         }
-        Some(existing) => InjectionState::NotConfigured {
-            current_launch_options: Some(existing.clone()),
-            required_launch_options: required,
-            reason: wrong_launch_options_reason(existing),
-            launch_script: script_present.then_some(script),
-        },
+        Some(existing) => {
+            let reason = wrong_launch_options_reason(existing, &required);
+            InjectionState::NotConfigured {
+                current_launch_options: Some(existing.clone()),
+                required_launch_options: required,
+                reason,
+                launch_script: script_present.then_some(script),
+            }
+        }
         None => InjectionState::NotConfigured {
             current_launch_options: None,
             required_launch_options: required,
@@ -312,9 +327,9 @@ pub fn inspect_injection(install: &SilksongInstall) -> InjectionState {
     }
 }
 
-fn wrong_launch_options_reason(existing: &str) -> String {
+fn wrong_launch_options_reason(existing: &str, required: &str) -> String {
     format!(
-        "current steam launch options do not use {SMM_LAUNCH_SCRIPT} (have: {existing}). needed: {STEAM_LAUNCH_OPTIONS}"
+        "current steam launch options do not use {SMM_LAUNCH_SCRIPT} (have: {existing}). needed: {required}"
     )
 }
 
@@ -323,7 +338,7 @@ pub fn ensure_launch_options(
     plan: &LaunchOptionsPlan,
 ) -> Result<LaunchOptionsOutcome, std::io::Error> {
     let script = ensure_launch_script(install, false)?;
-    let required = plan.required_launch_options;
+    let required = &plan.required_launch_options;
 
     if let Some(existing) = read_launch_options(SILKSONG_APP_ID)? {
         if launch_options_satisfy(&existing, install.build_kind)
@@ -346,7 +361,7 @@ pub fn ensure_launch_options(
         }),
         Err(error) => Ok(LaunchOptionsOutcome::ManualPasteRequired {
             reason: format!("could not update steam localconfig.vdf ({error})"),
-            launch_options: required.to_string(),
+            launch_options: required.clone(),
             script,
         }),
     }
@@ -361,7 +376,7 @@ pub fn launch_options_satisfy(existing: &str, build_kind: BuildKind) -> bool {
             existing.contains("WINEDLLOVERRIDES")
                 && (existing.contains("winhttp=n,b") || existing.contains("winhttp.dll=n,b"))
         }
-        BuildKind::NativeLinux => existing.contains("run_bepinex.sh"),
+        BuildKind::NativeLinux | BuildKind::NativeMacOS => existing.contains("run_bepinex.sh"),
     }
 }
 
@@ -583,11 +598,7 @@ fn unescape_vdf_value(value: &str) -> String {
 }
 
 pub fn steam_process_running() -> bool {
-    Command::new("pgrep")
-        .args(["-x", "steam"])
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
+    crate::platform::process_named_running(&["steam", "Steam"])
 }
 
 #[cfg(test)]
@@ -689,11 +700,22 @@ mod tests {
             "./smm_launch.sh %command%",
             BuildKind::Proton
         ));
+        assert!(launch_options_satisfy(
+            "\"/Applications/Hollow Knight Silksong/smm_launch.sh\" %command%",
+            BuildKind::NativeMacOS
+        ));
     }
 
     #[test]
     fn native_launch_script_runs_bepinex_wrapper() {
         let body = launch_script_body(BuildKind::NativeLinux);
+        assert!(body.contains("exec ./run_bepinex.sh"));
+        assert!(!body.contains("WINEDLLOVERRIDES"));
+    }
+
+    #[test]
+    fn macos_launch_script_runs_bepinex_wrapper() {
+        let body = launch_script_body(BuildKind::NativeMacOS);
         assert!(body.contains("exec ./run_bepinex.sh"));
         assert!(!body.contains("WINEDLLOVERRIDES"));
     }
@@ -707,16 +729,17 @@ mod tests {
 
     #[test]
     fn manual_paste_alert_is_unmistakable() {
+        let launch_options = "./smm_launch.sh %command%";
         let outcome = LaunchOptionsOutcome::ManualPasteRequired {
             reason: "could not update steam localconfig.vdf".to_string(),
-            launch_options: STEAM_LAUNCH_OPTIONS.to_string(),
+            launch_options: launch_options.to_string(),
             script: LaunchScriptAction::Created {
                 path: PathBuf::from("/tmp/game/smm_launch.sh"),
             },
         };
         let alert = outcome.alert_message().expect("alert");
         assert!(alert.contains("NOT set automatically"));
-        assert!(alert.contains(STEAM_LAUNCH_OPTIONS));
+        assert!(alert.contains(launch_options));
         assert!(alert.contains("smm_launch.sh"));
     }
 

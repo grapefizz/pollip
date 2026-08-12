@@ -58,11 +58,8 @@ pub fn profiles_directory() -> Result<PathBuf, StoreError> {
     if let Some(explicit) = std::env::var_os(PROFILES_ENV) {
         return Ok(PathBuf::from(explicit));
     }
-    let home = std::env::var_os("HOME").ok_or(StoreError::DirectoryUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("pollip")
+    Ok(crate::platform::data_directory()
+        .map_err(|_| StoreError::DirectoryUnavailable)?
         .join("profiles"))
 }
 

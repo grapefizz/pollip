@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  macos-dmg:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release
+      - run: mkdir -p dist-extras && ./scripts/package-dmg.sh target/release/pollip "${GITHUB_REF_NAME#v}" dist-extras
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist-extras/*.dmg
+          if-no-files-found: error
+
+  linux-release:
+    needs: macos-dmg
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install AppImage tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          sudo curl --fail --location --output /usr/local/bin/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          sudo chmod +x /usr/local/bin/appimagetool
+      - name: Build AppImage input
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+      - name: Create AppImage
+        run: mkdir -p dist-extras && ./scripts/package-appimage.sh target/x86_64-unknown-linux-gnu/release/pollip "${GITHUB_REF_NAME#v}" dist-extras
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist-extras
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

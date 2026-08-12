@@ -1,7 +1,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -46,11 +45,7 @@ impl From<io::Error> for LogError {
 }
 
 pub fn data_directory() -> Result<PathBuf, LogError> {
-    let home = std::env::var_os("HOME").ok_or(LogError::HomeUnavailable)?;
-    Ok(PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("pollip"))
+    crate::platform::data_directory().map_err(|_| LogError::HomeUnavailable)
 }
 
 pub fn logs_directory() -> Result<PathBuf, LogError> {
@@ -111,7 +106,7 @@ pub fn open_current_log() -> Result<PathBuf, LogError> {
 }
 
 fn open_path(path: &Path) -> Result<(), LogError> {
-    match Command::new("xdg-open").arg(path).spawn() {
+    match crate::platform::open_path(path) {
         Ok(_) => Ok(()),
         Err(error) => Err(LogError::OpenFailed {
             path: path.to_path_buf(),

@@ -140,12 +140,27 @@ impl Shell {
             .frame(
                 egui::Frame::new()
                     .fill(BG)
-                    .inner_margin(egui::Margin::symmetric(16, 0)),
+                    .inner_margin(egui::Margin::symmetric(
+                        if cfg!(target_os = "macos") { 100 } else { 16 },
+                        0,
+                    )),
             )
             .show(ui, |ui| {
+                #[cfg(target_os = "linux")]
+                {
+                    let drag_response = ui.interact(
+                        ui.max_rect(),
+                        ui.id().with("linux_window_drag"),
+                        egui::Sense::drag(),
+                    );
+                    if drag_response.drag_started() {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::StartDrag);
+                    }
+                }
+
                 ui.horizontal_centered(|ui| {
                     ui.label(brand_text("pollip"));
-                    ui.add_space(28.0);
+                    ui.add_space(44.0);
 
                     if nav_link(ui, self.active_panel == ActivePanel::Mods, "mods").clicked() {
                         self.active_panel = ActivePanel::Mods;
@@ -164,6 +179,9 @@ impl Shell {
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        #[cfg(target_os = "linux")]
+                        draw_linux_window_controls(ui);
+
                         let play_enabled = self.settings_panel.install().is_some();
                         let play = egui::Button::new(
                             egui::RichText::new("play")
@@ -387,5 +405,30 @@ impl Shell {
                 self.toasts.error(error.to_string());
             }
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn draw_linux_window_controls(ui: &mut egui::Ui) {
+    let button = |ui: &mut egui::Ui, label: &str| {
+        ui.add(
+            egui::Button::new(egui::RichText::new(label).color(WHITE))
+                .frame(false)
+                .min_size(egui::vec2(28.0, 28.0)),
+        )
+    };
+
+    if button(ui, "×").clicked() {
+        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    let maximized = ui.ctx().input(|input| input.viewport().maximized.unwrap_or(false));
+    if button(ui, if maximized { "❐" } else { "□" }).clicked() {
+        ui.ctx()
+            .send_viewport_cmd(egui::ViewportCommand::Maximized(!maximized));
+    }
+
+    if button(ui, "—").clicked() {
+        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Minimized(true));
     }
 }

@@ -9,7 +9,9 @@ pub const CACHE_MAX_AGE_SECS: u64 = 3_600;
 pub const CACHE_ENV: &str = "SILKSONG_NEXUS_CACHE";
 pub const META_FILE: &str = "nexus.json";
 pub const KEY_FILE_NAME: &str = "nexus-key";
+#[cfg(not(target_os = "macos"))]
 pub const NXM_DESKTOP_FILE: &str = "pollip-nxm.desktop";
+#[cfg(not(target_os = "macos"))]
 pub const NXM_MIME: &str = "x-scheme-handler/nxm";
 
 pub fn user_agent() -> String {
