@@ -33,9 +33,9 @@ nfpms:
       - deb
       - rpm
     package_name: pollip
-    vendor: Grapefizz
-    maintainer: Grapefizz
-    homepage: https://github.com/grapefizz/pollip
+    vendor: Pollip contributors
+    maintainer: Pollip contributors
+    homepage: https://github.com/l0rush1/pollip
     description: "A mod manager for Hollow Knight: Silksong."
     bindir: /usr/bin
     contents:
@@ -48,9 +48,6 @@ checksum:
   name_template: checksums.txt
 
 release:
-  github:
-    owner: grapefizz
-    name: pollip
   extra_files:
     - glob: dist-extras/*.dmg
     - glob: dist-extras/*.AppImage
