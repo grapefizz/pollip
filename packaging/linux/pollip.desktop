@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=pollip
+Comment=A mod manager for Hollow Knight: Silksong
+Exec=pollip
+Icon=pollip
+Terminal=false
+Categories=Game;Utility;
+Keywords=Silksong;Mods;BepInEx;

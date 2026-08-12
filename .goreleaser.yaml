@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+project_name: pollip
+
+before:
+  hooks:
+    - rustup target add x86_64-unknown-linux-gnu
+
+builds:
+  - id: linux
+    builder: rust
+    binary: pollip
+    targets:
+      - x86_64-unknown-linux-gnu
+    tool: cargo
+    command: build
+    flags:
+      - --release
+
+archives:
+  - id: linux-binary
+    ids:
+      - linux
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+nfpms:
+  - id: linux-packages
+    ids:
+      - linux
+    formats:
+      - deb
+      - rpm
+    package_name: pollip
+    vendor: Grapefizz
+    maintainer: Grapefizz
+    homepage: https://github.com/grapefizz/pollip
+    description: "A mod manager for Hollow Knight: Silksong."
+    bindir: /usr/bin
+    contents:
+      - src: packaging/linux/pollip.desktop
+        dst: /usr/share/applications/pollip.desktop
+      - src: packaging/linux/pollip.svg
+        dst: /usr/share/icons/hicolor/scalable/apps/pollip.svg
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: grapefizz
+    name: pollip
+  extra_files:
+    - glob: dist-extras/*.dmg
+    - glob: dist-extras/*.AppImage
