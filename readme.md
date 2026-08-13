@@ -7,6 +7,13 @@ browse and install mods from thunderstore and nexus, manage profiles, and launch
 3. install bepinex when asked (no need if already installed)
 4. after that you can use mods, profiles, and play
 
+#### macos installation notes
+after installing if you get an error saying `pollip Is Damaged and Can’t Be Opened. You Should Move It To The Trash`
+this should fix it
+```
+xattr -cr /Applications/pollip.app
+```
+
 <img src="./img/settings.jpg" alt="settings" width="800" />
 
 #### thunderstore:
