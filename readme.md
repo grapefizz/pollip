@@ -56,4 +56,4 @@ xattr -cr /Applications/pollip.app
 - tested only on fedora kde & gnome with native steam; other distros should work the same.
 - flatpak and snap steam paths are searched for detection / launch options, but those installs are not fully tested yet.
 
-creds: l0rush1, grapefizz (macos support + name)
+creds: l0rush1, [grapefizz](https://github.com/grapefizz) (macos support + name)
