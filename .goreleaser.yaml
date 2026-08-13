@@ -44,9 +44,6 @@ nfpms:
       - src: packaging/linux/pollip.svg
         dst: /usr/share/icons/hicolor/scalable/apps/pollip.svg
 
-checksum:
-  name_template: checksums.txt
-
 release:
   extra_files:
     - glob: dist-extras/*.dmg
